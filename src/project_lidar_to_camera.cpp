@@ -110,9 +110,10 @@ void projectLidarToCamera2() {
     cv::addWeighted(overlay, opacity, visImg, 1 - opacity, 0, visImg);
 
     string windowName = "LiDAR data on image overlay";
-    cv::namedWindow(windowName, 3);
-    cv::imshow(windowName, visImg);
-    cv::waitKey(0); // wait for key to be pressed
+//     cv::namedWindow(windowName, 3);
+//     cv::imshow(windowName, visImg);
+//     cv::waitKey(0); // wait for key to be pressed
+    cv::imwrite("./out.jpg",visImg)
 }
 
 int main() {

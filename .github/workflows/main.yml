@@ -4,12 +4,11 @@ on: push
 jobs:
   test:
     runs-on: ubuntu-latest
-    name: Run
     steps:
-    - uses: actions/checkout@v1
+    - name: Set up Git repository
+      uses: actions/checkout@v1
     - name: Install OpenCV
-      uses: ./ # Uses an action in the root directory
       with:
         opencv-version: '4.1.0'
     - name: Build
-      run: "sh build.bash"
+      run: sh build.bash

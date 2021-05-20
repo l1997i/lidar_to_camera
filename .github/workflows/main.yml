@@ -7,8 +7,12 @@ jobs:
     steps:
     - name: Set up Git repository
       uses: actions/checkout@v1
+    - name: Install GCC
+      uses: egor-tensin/setup-gcc@v1
     - name: Install OpenCV
+      uses: rayandrews/with-opencv-action@v1
       with:
+        cached: true
         opencv-version: '4.1.0'
     - name: Build
       run: sh build.bash

@@ -12,7 +12,7 @@ jobs:
     - name: Install OpenCV
       uses: rayandrews/with-opencv-action@v1
       with:
-        cached: true
+        cached: false
         opencv-version: '4.1.0'
     - name: Build
       run: sh build.bash

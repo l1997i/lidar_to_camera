@@ -1,0 +1,15 @@
+name: Run
+on: push
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    name: Run
+    steps:
+    - name: Install OpenCV
+      uses: rayandrews/with-opencv-action@v1
+      with:
+        cached: true
+        opencv-version: '4.1.0'
+    - name: Build
+      run: "sh build.bash"

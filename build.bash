@@ -5,4 +5,4 @@ cd build
 cmake ..
 make
 ./project_lidar_to_camera
-
+cd ..

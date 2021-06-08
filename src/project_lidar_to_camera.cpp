@@ -72,7 +72,7 @@ void projectLidarToCamera2() {
     cv::Mat RT(4, 4, cv::DataType<double>::type); // rotation matrix and translation vector
     loadCalibrationData(P_rect_00, R_rect_00, RT);
 
-    // TODO: project lidar points
+    // project lidar points
     cv::Mat visImg = img.clone();
     cv::Mat overlay = visImg.clone();
 

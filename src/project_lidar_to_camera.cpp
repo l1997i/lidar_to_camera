@@ -80,10 +80,10 @@ void projectLidarToCamera2() {
     cv::Mat Y(3, 1, cv::DataType<double>::type);
     for (auto it = lidarPoints.begin(); it != lidarPoints.end(); ++it) {
         // filter the not needed points
-        float MaxX = 25.0, maxY = 6.0, minZ = -1.40;
-        if (it->x > MaxX ||it->x < 0.0 || abs(it->y) > maxY || it->z < minZ || it->r < 0.01) {
-            continue;
-        }
+        // float MaxX = 25.0, maxY = 6.0, minZ = -1.40;
+        // if (it->x > MaxX ||it->x < 0.0 || abs(it->y) > maxY || it->z < minZ || it->r < 0.01) {
+        //     continue;
+        // }
 
         // 1. Convert current Lidar point into homogeneous coordinates and store it in the 4D variable X.
         X.at<double>(0, 0) = it->x;
@@ -103,7 +103,7 @@ void projectLidarToCamera2() {
         float maxVal = 20.0;
         int red = min(255, (int) (255 * abs((val - maxVal) / maxVal)));
         int green = min(255, (int) (255 * (1 - abs((val - maxVal) / maxVal))));
-        cv::circle(overlay, pt, 5, cv::Scalar(0, green, red), -1);
+        cv::circle(overlay, pt, 1, cv::Scalar(0, green, red), -1);
     }
 
     float opacity = 0.6;

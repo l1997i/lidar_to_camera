@@ -58,10 +58,11 @@ void showLidarTopview()
     }
 
     // display image
-    string windowName = "Top-View Perspective of LiDAR data";
-    cv::namedWindow(windowName, 2);
-    cv::imshow(windowName, topviewImg);
-    cv::waitKey(0); // wait for key to be pressed
+//     string windowName = "Top-View Perspective of LiDAR data";
+//     cv::namedWindow(windowName, 2);
+//     cv::imshow(windowName, topviewImg);
+//     cv::waitKey(0); // wait for key to be pressed
+    cv::imwrite("./topviewImg.jpg",topviewImg);
 }
 
 int main()

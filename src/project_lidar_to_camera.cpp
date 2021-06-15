@@ -10,6 +10,55 @@
 
 using namespace std;
 
+bool loadPCDfromBin(string filename, pcl::PointCloud<pcl::PointXYZI> &ptcloud)
+{
+    // Load the actual pointcloud.
+    // const size_t kMaxNumberOfPoints = 1e6; // From Readme for raw files.
+    // ptcloud->clear();
+    // ptcloud->reserve(kMaxNumberOfPoints);
+
+    std::ifstream input(filename, std::ios::in | std::ios::binary);
+    if (!input)
+    {
+        std::cout << "Could not open pointcloud file.\n";
+        return false;
+    }
+
+    for (size_t i = 0; input.good() && !input.eof(); i++)
+    {
+        pcl::PointXYZI point;
+        //Open a container and write (x, y, z, i) one at a time, it's ok
+        input.read((char *)&point.x, 3 * sizeof(float));
+        input.read((char *)&point.intensity, sizeof(float));
+        ptcloud.push_back(point);
+    }
+    input.close();
+    return true;
+}
+
+void convertPCDtoBin(std::string &in_file, std::string &out_file)
+{   //! [pcd->bin] NOT USED
+    pcl::PointCloud<pcl::PointXYZI>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZI>);
+
+    if (pcl::io::loadPCDFile<pcl::PointXYZI>(in_file, *cloud) == -1) //* load the file
+    {
+        std::string err = "Couldn't read file " + in_file;
+        PCL_ERROR(err.c_str());
+        return; // (-1);
+    }
+
+    std::ofstream myFile(out_file.c_str(), std::ios::out | std::ios::binary);
+    for (int j = 0; j < cloud->size(); j++)
+    {
+
+        myFile.write((char *)&cloud->at(j).x, sizeof(cloud->at(j).x));
+        myFile.write((char *)&cloud->at(j).y, sizeof(cloud->at(j).y));
+        myFile.write((char *)&cloud->at(j).z, sizeof(cloud->at(j).z));
+        myFile.write((char *)&cloud->at(j).intensity, sizeof(cloud->at(j).intensity));
+    }
+    myFile.close();
+}
+
 vector<string> getFiles(string get_dir)
 {
     vector<string> files;
@@ -19,13 +68,16 @@ vector<string> getFiles(string get_dir)
 
     if ((dir = opendir(get_dir.c_str())) == NULL)
     {
+        cout << get_dir.c_str();
         perror("Open dir error...");
         exit(1);
     }
 
     while ((ptr = readdir(dir)) != NULL)
     {
-        if (strcmp(ptr->d_name, ".") == 0 || strcmp(ptr->d_name, "..") == 0) ///current dir OR parrent dir
+        if (strcmp(ptr->d_name, ".") == 0
+            || strcmp(ptr->d_name, "..") == 0
+            || strcmp(ptr->d_name, "timestamp.txt") == 0) ///current dir OR parrent dir
             continue;
         else if (ptr->d_type == 8) ///file
         //printf("d_name:%s/%s\n",basePath,ptr->d_name);
@@ -62,7 +114,9 @@ vector<string> getPairName(string pairs_dir)
 
     while ((ptr = readdir(dir)) != NULL)
     {
-        if (strcmp(ptr->d_name, ".") == 0 || strcmp(ptr->d_name, "..") == 0) ///current dir OR parrent dir
+        if (strcmp(ptr->d_name, ".") == 0
+        || strcmp(ptr->d_name, "..") == 0
+        || strcmp(ptr->d_name, "timestamp.txt") == 0) ///current dir OR parrent dir
             continue;
         else if (ptr->d_type == 8 || ptr->d_type == 10) ///file || link file
         //printf("d_name:%s/%s\n",basePath,ptr->d_name);
@@ -137,14 +191,20 @@ void loadCalibrationData(cv::Mat &P_rect_00, cv::Mat &R_rect_00, cv::Mat &RT)
     P_rect_00.at<double>(2, 3) = 0.000000e+00;
 }
 
-void projectLidarToCamera2(string img_path, string pts_path, string depth_path)
+void projectLidarToCamera2(string img_path, string pts_path, string depth_path, string bin_path)
 {
 
-    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
-    if (pcl::io::loadPCDFile<pcl::PointXYZ>(pts_path, *cloud) == -1) //* load the file
+    pcl::PointCloud<pcl::PointXYZI>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZI>);
+    // if (pcl::io::loadPCDFile<pcl::PointXYZ>(pts_path, *cloud) == -1) //* load the file
+    // { //! [pcd->bin] NOT USED
+    //     std::cout << "Couldn't read pointCloud file\n";
+    // }
+
+    if (!loadPCDfromBin(pts_path, *cloud))
     {
         std::cout << "Couldn't read pointCloud file\n";
     }
+
     // load image from file
     cv::Mat img = cv::imread(img_path);
 
@@ -197,26 +257,16 @@ void projectLidarToCamera2(string img_path, string pts_path, string depth_path)
     float opacity = 0.65;
     cv::addWeighted(overlay, opacity, visImg, 1 - opacity, 0, visImg);
     cv::imwrite(depth_path, visImg);
+    // convertPCDtoBin(pts_path, bin_path); //! [pcd->bin] NOT USED
 }
 
-void projectSpecificDir(string basePath, string pair_name)
+void makeDir(string dir)
 {
-    DIR *dir;
-    struct dirent *ptr;
-    string img_dir, pts_dir, depth_dir;
-    string img_prefix = "image_02/";
-    string pts_prefix = "pcl/";
-    string depth_prefix = "proj_depth_rgb/";
-
-    img_dir = basePath + '/' + pair_name + '/' + img_prefix;
-    pts_dir = basePath + '/' + pair_name + '/' + pts_prefix;
-    depth_dir = basePath + '/' + pair_name + '/' + depth_prefix;
-
-    if (access(depth_dir.c_str(), 0) == -1)
+    if (access(dir.c_str(), 0) == -1)
     {
-        cout << depth_dir << " is not existing" << endl;
+        cout << dir << " is not existing" << endl;
         cout << "now make it" << endl;
-        int flag = mkdir(depth_dir.c_str(), 0777);
+        int flag = mkdir(dir.c_str(), 0777);
         if (flag == 0)
         {
             cout << "make successfully" << endl;
@@ -227,12 +277,12 @@ void projectSpecificDir(string basePath, string pair_name)
         }
     }
 
-    else if (access(depth_dir.c_str(), 0) == 0)
+    else if (access(dir.c_str(), 0) == 0)
     {
-        cout << depth_dir << " exists" << endl;
+        cout << dir << " exists" << endl;
         cout << "now delete it and remake it" << endl;
-        int flag = rmdir(depth_dir.c_str());
-        mkdir(depth_dir.c_str(), 0777);
+        int flag = rmdir(dir.c_str());
+        mkdir(dir.c_str(), 0777);
         if (flag == 0)
         {
             cout << "delete it successfully" << endl;
@@ -242,6 +292,25 @@ void projectSpecificDir(string basePath, string pair_name)
             cout << "delete it errorly" << endl;
         }
     }
+}
+
+void projectSpecificDir(string basePath, string pair_name)
+{
+    DIR *dir;
+    struct dirent *ptr;
+    string img_dir, pts_dir, depth_dir, bin_dir;
+    string img_prefix = "image_02/";
+    string pts_prefix = "bin/";
+    string depth_prefix = "proj_depth_rgb/";
+    string bin_prefix = "bin/"; //! [pcd->bin] NOT USED
+
+    img_dir = basePath + '/' + pair_name + '/' + img_prefix;
+    pts_dir = basePath + '/' + pair_name + '/' + pts_prefix;
+    depth_dir = basePath + '/' + pair_name + '/' + depth_prefix;
+    bin_dir = basePath + '/' + pair_name + '/' + bin_prefix;
+
+    makeDir(depth_dir);
+    makeDir(bin_dir);
 
     vector<string> img_list = getFiles(img_dir);
     vector<string> pts_list = getFiles(pts_dir);
@@ -253,9 +322,10 @@ void projectSpecificDir(string basePath, string pair_name)
         if (img_list[i] != ".DS_Store" && pts_list[i] != ".DS_Store")
         {
             string img_path = img_dir + imgNo + ".png";
-            string pts_path = pts_dir + imgNo + ".pcd";
+            string pts_path = pts_dir + imgNo + ".bin";
             string depth_path = depth_dir + imgNo + ".png";
-            projectLidarToCamera2(img_path, pts_path, depth_path);
+            string bin_path = bin_dir + imgNo + ".bin"; //! [pcd->bin] NOT USED
+            projectLidarToCamera2(img_path, pts_path, depth_path, bin_path);
         }
     }
 }
@@ -270,7 +340,8 @@ int main()
     pairsPath = pairsPath + "/../pairs";
     vector<string> pair_list = getPairName(pairsPath);
 
-    for (auto pair : pair_list) {
+    for (auto pair : pair_list)
+    {
         pair = "../pairs/" + pair;
         projectSpecificDir(basePath, pair);
     }

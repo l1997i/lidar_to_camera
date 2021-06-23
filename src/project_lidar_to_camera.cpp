@@ -227,8 +227,8 @@ void projectLidarToCamera2(string img_path, string pts_path, string depth_path, 
     for (const auto &it : *cloud)
     {
         // filter the not needed points
-        float MaxX = 60.0, maxY = 60.0, minZ = -2;
-        if (it.x < 0.0 || it.x > MaxX)
+        float minX = RT.at<double>(0, 3), MaxX = 60.0, maxY = 60.0, minZ = -2;
+        if (it.x < minX)
         {
             continue;
         }
@@ -310,7 +310,7 @@ void projectSpecificDir(string basePath, string pair_name)
     bin_dir = basePath + '/' + pair_name + '/' + bin_prefix;
 
     makeDir(depth_dir);
-    makeDir(bin_dir);
+    // makeDir(bin_dir);  //! [pcd->bin] NOT USED
 
     vector<string> img_list = getFiles(img_dir);
     vector<string> pts_list = getFiles(pts_dir);
